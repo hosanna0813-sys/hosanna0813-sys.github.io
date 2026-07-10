@@ -1,0 +1,47 @@
+# 自動從 hosanna0813-sys/transcribe(公開 repo)同步前端到本 repo 根目錄。
+# 觸發:此檔建立/更新時、每 3 小時一次、或在 Actions 頁手動 Run workflow。
+name: sync-frontend
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Checkout source (transcribe)
+        uses: actions/checkout@v4
+        with:
+          repository: hosanna0813-sys/transcribe
+          path: _src
+
+      - name: Copy site files
+        run: |
+          cp _src/index.html index.html
+          cp _src/ads.txt ads.txt
+          mkdir -p v2 byok privacy
+          cp _src/v2/index.html v2/index.html
+          cp _src/byok/index.html byok/index.html
+          cp _src/privacy/index.html privacy/index.html
+          rm -rf _src
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes."
+          else
+            git commit -m "sync frontend from transcribe repo"
+            git push
+          fi
