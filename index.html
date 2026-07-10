@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>免費語音轉逐字稿 — 10 分鐘試用</title>
+<meta name="description" content="免費把音檔或 YouTube 影片轉成逐字稿,無須註冊、免自備金鑰,先試 10 分鐘。需要更多可登入儲值。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- AdSense 網站載入碼(每頁 <head> 都要放,供 Google 驗證網站) -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5508689053185527"
+     crossorigin="anonymous"></script>
+<!-- ⬇⬇ AdSense 設定:只要在這裡填,不必動其他地方 ⬇⬇
+     1) 申請 AdSense 拿到發布商 ID 後,把 pub 填成 'ca-pub-1234567890123456' → 廣告程式自動載入,即可送審。
+     2) 通過審核後,在 AdSense 後台為「內容上方」「結果下方」各建一個廣告單元,
+        把取得的版位代碼填進 slotTop / slotBottom → 兩個版位就會開始顯示廣告。
+     全部留空時,頁面顯示「待啟用」佔位框,功能與版面完全不受影響。 -->
+<script>
+window.ADS = {
+  pub: 'ca-pub-5508689053185527',
+  slotTop: '',    // 核准後填(內容上方版位代碼,例:'1234567890')
+  slotBottom: ''  // 核准後填(結果下方版位代碼,例:'0987654321')
+};
+</script>
+<style>
+  :root{
+    --bg:#F4F6FA; --card:#FFFFFF; --ink:#18213A; --muted:#65718A;
+    --accent:#3B5BDB; --accent-soft:#EDF1FE; --line:#E3E8F0;
+    --ok:#188A50; --ok-soft:#E9F7EF; --err:#C4453A; --err-soft:#FCEEEC;
+    --radius:14px; --radius-s:9px;
+    --shadow:0 1px 2px rgba(24,33,58,.05),0 10px 30px rgba(24,33,58,.07);
+  }
+  [data-mode=dark]{
+    --bg:#0E1320; --card:#171E2E; --ink:#E7EBF4; --muted:#93A0B8;
+    --accent:#7B96F4; --accent-soft:#232E4E; --line:#2A3550;
+    --ok:#5CC98A; --ok-soft:#173226; --err:#F08A80; --err-soft:#3A211E;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 36px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Noto Sans TC',system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--ink);min-height:100vh;
+    padding:28px 16px 64px;line-height:1.6;
+    transition:background .25s,color .25s;
+  }
+  .wrap{max-width:680px;margin:0 auto}
+  .hidden{display:none!important}
+
+  /* ---------- 頁首 ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .logo{
+    width:42px;height:42px;flex:none;border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),#7B5BD6);
+    display:flex;align-items:center;justify-content:center;color:#fff;
+  }
+  .logo svg{width:22px;height:22px}
+  .brand h1{font-size:1.25rem;font-weight:700;letter-spacing:.04em;line-height:1.3}
+  .brand p{font-size:.78rem;color:var(--muted)}
+  .top-actions{display:flex;align-items:center;gap:8px;flex:none}
+  .btn-login{
+    padding:8px 14px;border:1px solid var(--accent);border-radius:999px;
+    background:var(--accent);color:#fff;font-size:.82rem;font-weight:500;
+    text-decoration:none;white-space:nowrap;
+  }
+  .btn-login:hover{filter:brightness(1.05)}
+  #modeBtn{
+    width:38px;height:38px;flex:none;border-radius:50%;border:1px solid var(--line);
+    background:var(--card);cursor:pointer;font-size:1rem;line-height:1;
+  }
+  #modeBtn:hover{border-color:var(--accent)}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:24px 24px 20px;margin-bottom:16px;
+  }
+  .hero .free-tag{
+    display:inline-block;background:var(--ok-soft);color:var(--ok);
+    font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.04em;
+  }
+  .hero h2{font-size:1.4rem;font-weight:700;margin:12px 0 8px;line-height:1.35}
+  .hero p{color:var(--muted);font-size:.9rem}
+  .hero ul{list-style:none;margin-top:14px;display:flex;flex-wrap:wrap;gap:8px 18px}
+  .hero li{font-size:.84rem;color:var(--ink);display:flex;align-items:center;gap:6px}
+  .hero li svg{width:15px;height:15px;color:var(--ok);flex:none}
+
+  /* ---------- 廣告版位 ---------- */
+  .ad-slot{
+    background:var(--card);border:1px dashed var(--line);border-radius:var(--radius-s);
+    margin-bottom:16px;min-height:100px;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:.74rem;text-align:center;overflow:hidden;
+  }
+  .ad-slot ins{display:block;width:100%}
+
+  /* ---------- 卡片 ---------- */
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;
+  }
+  .card>section{padding:22px 24px}
+  .card>section+section{border-top:1px solid var(--line)}
+  .step-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .step-head h3{font-size:1rem;font-weight:700;letter-spacing:.03em}
+
+  /* ---------- 分頁 ---------- */
+  .tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--bg);padding:4px;border-radius:var(--radius-s);border:1px solid var(--line)}
+  .tab{
+    flex:1;padding:9px;border:none;background:transparent;color:var(--muted);
+    font-family:inherit;font-size:.86rem;font-weight:500;border-radius:7px;cursor:pointer;
+  }
+  .tab.on{background:var(--card);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+  /* ---------- 表單 ---------- */
+  input[type=text],input[type=url],textarea{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-s);
+    font-family:inherit;font-size:.92rem;color:var(--ink);background:var(--card);
+  }
+  input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+  ::placeholder{color:var(--muted);opacity:.7}
+  .hint{font-size:.78rem;color:var(--muted);margin-top:8px;line-height:1.65}
+  label.fld{display:block;font-size:.8rem;color:var(--muted);margin-bottom:5px}
+
+  .drop{
+    border:1.5px dashed var(--line);border-radius:var(--radius-s);
+    padding:28px 16px;text-align:center;cursor:pointer;transition:.15s;
+    color:var(--muted);font-size:.9rem;line-height:1.8;background:var(--bg);
+  }
+  .drop:hover,.drop.over{border-color:var(--accent);color:var(--ink);background:var(--accent-soft)}
+  .drop b{color:var(--accent);font-weight:500}
+  .drop small{font-size:.76rem;display:block;margin-top:2px}
+  .filename{margin-top:10px;font-size:.85rem;color:var(--ink);word-break:break-all}
+
+  .yt-preview{margin-top:14px;border-radius:var(--radius-s);overflow:hidden;background:#000;aspect-ratio:16/9}
+  .yt-preview iframe{width:100%;height:100%;border:0;display:block}
+  .trim-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+  .trim-row>div{flex:1;min-width:120px}
+  .trim-row input{width:100%}
+
+  .check{display:flex;align-items:flex-start;gap:9px;font-size:.88rem;cursor:pointer;line-height:1.5;margin-top:14px}
+  .check input{margin-top:4px;accent-color:var(--accent);width:15px;height:15px;flex:none}
+  .check small{display:block;color:var(--muted);font-size:.76rem}
+
+  .btn{
+    width:100%;margin-top:18px;padding:13px;border:none;border-radius:var(--radius-s);
+    background:var(--accent);color:#fff;font-family:inherit;font-size:.95rem;font-weight:700;
+    letter-spacing:.05em;cursor:pointer;transition:.15s;
+  }
+  .btn:hover:not(:disabled){filter:brightness(1.06)}
+  .btn:disabled{opacity:.55;cursor:default}
+
+  .msg{margin-top:12px;font-size:.84rem;padding:10px 12px;border-radius:var(--radius-s);display:none}
+  .msg.show{display:block}
+  .msg.err{background:var(--err-soft);color:var(--err)}
+  .msg.info{background:var(--accent-soft);color:var(--accent)}
+
+  .remain{font-size:.78rem;color:var(--muted);margin-top:10px;text-align:center}
+  .remain b{color:var(--accent)}
+
+  /* ---------- 結果 ---------- */
+  .result-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .result-head h3{font-size:1rem;font-weight:700}
+  .result-actions{display:flex;gap:6px}
+  .result-actions button{
+    border:1px solid var(--line);background:var(--card);color:var(--muted);
+    padding:6px 12px;font-size:.78rem;border-radius:7px;cursor:pointer;font-family:inherit;
+  }
+  .result-actions button:hover{border-color:var(--accent);color:var(--accent)}
+  #resultText{
+    width:100%;min-height:200px;resize:vertical;line-height:1.8;font-size:.9rem;
+    padding:14px;background:var(--bg);
+  }
+
+  /* ---------- 升級 CTA ---------- */
+  .upsell{
+    background:linear-gradient(135deg,var(--accent-soft),var(--card));
+    border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:16px;
+  }
+  .upsell h3{font-size:1.05rem;font-weight:700;margin-bottom:6px}
+  .upsell p{font-size:.86rem;color:var(--muted);margin-bottom:14px}
+  .upsell a{
+    display:inline-block;padding:11px 22px;border-radius:999px;background:var(--accent);
+    color:#fff;text-decoration:none;font-size:.9rem;font-weight:700;letter-spacing:.03em;
+  }
+  .upsell a:hover{filter:brightness(1.06)}
+
+  /* ---------- 頁尾 ---------- */
+  footer{text-align:center;font-size:.78rem;color:var(--muted);margin-top:8px;line-height:1.9}
+  footer a{color:var(--accent);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/>
+        </svg>
+      </div>
+      <div>
+        <h1>語音轉逐字稿</h1>
+        <p>免費試用 · 免註冊 · 中文優化</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <a class="btn-login" href="v2/">登入 / 儲值</a>
+      <button id="modeBtn" title="切換深色模式">🌙</button>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <span class="free-tag">免費體驗</span>
+    <h2>把音檔或 YouTube 影片<br>變成逐字稿</h2>
+    <p>上傳一段短音檔,或貼上 YouTube 網址截取片段,馬上得到 AI 逐字稿與校正。<b id="heroMin">10</b> 分鐘免費、<b>無須註冊</b>。</p>
+    <ul>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>免登入、免自備金鑰</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>支援中文、AI 校正</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>音檔 / YouTube 皆可</li>
+    </ul>
+  </div>
+
+  <!-- 廣告版位(上);內容由 initAds() 依 window.ADS 設定自動填入 -->
+  <div class="ad-slot" id="adTop">廣告版位(AdSense · 待啟用)</div>
+
+  <!-- 試用卡片 -->
+  <div class="card">
+    <section>
+      <div class="step-head"><h3>開始轉錄</h3></div>
+
+      <div class="tabs">
+        <button class="tab on" id="tabFile" type="button">上傳音檔</button>
+        <button class="tab" id="tabYt" type="button">YouTube</button>
+      </div>
+
+      <!-- 檔案模式 -->
+      <div id="paneFile">
+        <div class="drop" id="drop">
+          <b>點此選擇</b> 或拖曳音檔到這裡
+          <small>MP3 / M4A / WAV… · 單檔 ≤ <span class="minTxt">10</span> 分鐘、100 MB</small>
+        </div>
+        <input type="file" id="fileInput" accept="audio/*,video/*" hidden>
+        <div class="filename hidden" id="fileName"></div>
+      </div>
+
+      <!-- YouTube 模式 -->
+      <div id="paneYt" class="hidden">
+        <label class="fld" for="ytUrl">YouTube 網址</label>
+        <input type="url" id="ytUrl" placeholder="https://www.youtube.com/watch?v=...">
+        <div class="yt-preview hidden" id="ytPreview"></div>
+        <div class="trim-row">
+          <div>
+            <label class="fld" for="ytStart">起點(選填)</label>
+            <input type="text" id="ytStart" placeholder="例:1:30">
+          </div>
+          <div>
+            <label class="fld" for="ytEnd">終點(選填)</label>
+            <input type="text" id="ytEnd" placeholder="例:11:00">
+          </div>
+        </div>
+        <p class="hint">可填「秒」、「分:秒」或「時:分:秒」。免費試用僅截取 <span class="minTxt">10</span> 分鐘內;不填則從頭取前 <span class="minTxt">10</span> 分鐘。</p>
+      </div>
+
+      <label class="check">
+        <input type="checkbox" id="optCorrect" checked>
+        <span>AI 校正錯字與標點<small>用 AI 修飾逐字稿,讓內容更通順(建議開啟)</small></span>
+      </label>
+
+      <button class="btn" id="goBtn" type="button">免費轉錄</button>
+      <div class="msg" id="msg"></div>
+      <div class="remain" id="remain"></div>
+    </section>
+  </div>
+
+  <!-- 結果 -->
+  <div class="card hidden" id="resultCard">
+    <section>
+      <div class="result-head">
+        <h3>逐字稿結果</h3>
+        <div class="result-actions">
+          <button id="copyBtn" type="button">複製</button>
+          <button id="dlBtn" type="button">下載 .txt</button>
+        </div>
+      </div>
+      <textarea id="resultText" readonly></textarea>
+    </section>
+  </div>
+
+  <!-- 廣告版位(下);內容由 initAds() 依 window.ADS 設定自動填入 -->
+  <div class="ad-slot" id="adBottom">廣告版位(AdSense · 待啟用)</div>
+
+  <!-- 升級 CTA -->
+  <div class="upsell">
+    <h3>需要轉更長、更多次?</h3>
+    <p>登入後可儲值,轉錄長達 3 小時的音檔、背景排隊處理、保存歷史紀錄,每天還有免費額度。</p>
+    <a href="v2/">登入並儲值 →</a>
+  </div>
+
+  <footer>
+    想用自己的 OpenAI Key、不限次數?<a href="byok/">前往進階版(自備金鑰)→</a><br>
+    轉錄由 AI 產生,可能有誤,請自行校對。<br>
+    <a href="privacy/">隱私權政策</a>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var BACKEND_URL='https://transcribe-yt-j7kv.onrender.com';
+  function $(id){return document.getElementById(id);}
+  function show(el){(typeof el==='string'?$(el):el).classList.remove('hidden');}
+  function hide(el){(typeof el==='string'?$(el):el).classList.add('hidden');}
+  function setMsg(text,kind){
+    var m=$('msg');
+    if(!text){m.className='msg';m.textContent='';return;}
+    m.className='msg show '+(kind||'info');m.innerHTML=text;
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  /* 深色模式 */
+  var modeBtn=$('modeBtn');
+  function applyMode(m){document.documentElement.setAttribute('data-mode',m);modeBtn.textContent=m==='dark'?'☀️':'🌙';}
+  try{
+    var saved=localStorage.getItem('tw_mode');
+    applyMode(saved||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+  }catch(e){applyMode('light');}
+  modeBtn.addEventListener('click',function(){
+    var next=document.documentElement.getAttribute('data-mode')==='dark'?'light':'dark';
+    applyMode(next);try{localStorage.setItem('tw_mode',next);}catch(e){}
+  });
+
+  /* 分頁切換 */
+  var mode='file';
+  function switchTab(m){
+    mode=m;
+    $('tabFile').classList.toggle('on',m==='file');
+    $('tabYt').classList.toggle('on',m==='yt');
+    $('paneFile').classList.toggle('hidden',m!=='file');
+    $('paneYt').classList.toggle('hidden',m!=='yt');
+    setMsg('');
+  }
+  $('tabFile').addEventListener('click',function(){switchTab('file');});
+  $('tabYt').addEventListener('click',function(){switchTab('yt');});
+
+  /* 檔案選擇 */
+  var fileInput=$('fileInput'),drop=$('drop');
+  drop.addEventListener('click',function(){fileInput.click();});
+  ['dragover','dragenter'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('over');});});
+  ['dragleave','drop'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('over');});});
+  drop.addEventListener('drop',function(e){if(e.dataTransfer.files.length){fileInput.files=e.dataTransfer.files;onFile();}});
+  fileInput.addEventListener('change',onFile);
+  function onFile(){
+    var f=fileInput.files[0];
+    if(f){$('fileName').textContent='已選擇:'+f.name;show('fileName');}
+    else hide('fileName');
+  }
+
+  /* YouTube 預覽 */
+  function ytId(url){
+    var m=url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+    return m?m[1]:null;
+  }
+  var lastId=null;
+  $('ytUrl').addEventListener('input',function(){
+    var id=ytId(($('ytUrl').value||'').trim());
+    if(id===lastId)return;lastId=id;
+    var box=$('ytPreview');
+    if(id){box.innerHTML='<iframe allow="encrypted-media" allowfullscreen src="https://www.youtube.com/embed/'+id+'"></iframe>';show(box);}
+    else{box.innerHTML='';hide(box);}
+  });
+
+  function parseTime(str){
+    str=(str||'').trim();
+    if(!str)return null;
+    var m=str.match(/^(\d+)(?::([0-5]?\d))?(?::([0-5]?\d))?$/);
+    if(!m)return NaN;
+    var a=+m[1],b=m[2]!==undefined?+m[2]:null,c=m[3]!==undefined?+m[3]:null;
+    return c!==null?a*3600+b*60+c:(b!==null?a*60+b:a);
+  }
+
+  /* 試用狀態 */
+  var trialMin=10;
+  fetch(BACKEND_URL+'/api/trial/status',{headers:{'ngrok-skip-browser-warning':'1'}})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.trial_minutes){trialMin=d.trial_minutes;
+        $('heroMin').textContent=d.trial_minutes;
+        Array.prototype.forEach.call(document.querySelectorAll('.minTxt'),function(e){e.textContent=d.trial_minutes;});
+      }
+      if(!d.enabled){
+        setMsg('免費試用暫時未開放,請稍後再試,或<a href="v2/" style="color:inherit;text-decoration:underline">登入使用</a>。','err');
+        $('goBtn').disabled=true;
+      }else if(typeof d.remaining_minutes==='number'){
+        showRemain(d.remaining_minutes);
+      }
+    }).catch(function(){});
+
+  function showRemain(min){
+    $('remain').innerHTML='今日剩餘免費額度:<b>'+min+'</b> 分鐘';
+  }
+
+  /* 送出轉錄 */
+  var busy=false;
+  $('goBtn').addEventListener('click',function(){
+    if(busy)return;
+    var form=new FormData();
+    if(mode==='yt'){
+      var url=($('ytUrl').value||'').trim();
+      if(!url){setMsg('請貼上 YouTube 網址。','err');return;}
+      if(!/^https?:\/\/(www\.|m\.|music\.)?(youtube\.com\/|youtu\.be\/)/i.test(url)){
+        setMsg('這看起來不是 YouTube 網址。','err');return;}
+      var s=parseTime($('ytStart').value),e=parseTime($('ytEnd').value);
+      if(isNaN(s)||isNaN(e)){setMsg('起訖時間格式錯誤(用 秒、分:秒 或 時:分:秒)。','err');return;}
+      if(s!=null&&e!=null&&e<=s){setMsg('終點必須大於起點。','err');return;}
+      form.append('youtube_url',url);
+      if(s!=null)form.append('start',s);
+      if(e!=null)form.append('end',e);
+    }else{
+      var f=fileInput.files[0];
+      if(!f){setMsg('請選擇要轉錄的音檔。','err');return;}
+      form.append('file',f,f.name);
+    }
+    form.append('correct',$('optCorrect').checked?'true':'false');
+
+    setBusy(true);hide('resultCard');
+    setMsg('<span class="spin"></span>處理中……取得音訊與 AI 轉錄可能需 30–90 秒,請稍候。','info');
+    fetch(BACKEND_URL+'/api/trial',{method:'POST',
+      headers:{'ngrok-skip-browser-warning':'1'},body:form})
+      .then(function(res){
+        return res.text().then(function(t){
+          var d;try{d=JSON.parse(t);}catch(err){d={};}
+          if(!res.ok){
+            var msg=d.detail||('伺服器錯誤(HTTP '+res.status+')');
+            throw new Error(msg);
+          }
+          return d;
+        });
+      }).then(function(d){
+        $('resultText').value=d.text||'(沒有辨識到內容)';
+        show('resultCard');setMsg('');
+        if(typeof d.trial_remaining_minutes==='number')showRemain(d.trial_remaining_minutes);
+        $('resultCard').scrollIntoView({behavior:'smooth',block:'start'});
+      }).catch(function(err){
+        var m=escapeHtml(err&&err.message||String(err));
+        if(/已用完|總量|上限/.test(m)){
+          m+=' &nbsp;<a href="v2/" style="color:inherit;text-decoration:underline">登入儲值繼續 →</a>';
+        }
+        setMsg(m,'err');
+      }).then(function(){setBusy(false);});
+  });
+
+  function setBusy(on){
+    busy=on;var b=$('goBtn');
+    b.disabled=on;b.textContent=on?'處理中…':'免費轉錄';
+  }
+
+  /* 結果操作 */
+  $('copyBtn').addEventListener('click',function(){
+    var ta=$('resultText');ta.select();
+    try{document.execCommand('copy');this.textContent='已複製 ✓';var self=this;setTimeout(function(){self.textContent='複製';},1500);}catch(e){}
+  });
+  $('dlBtn').addEventListener('click',function(){
+    var blob=new Blob([$('resultText').value],{type:'text/plain;charset=utf-8'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='transcript.txt';a.click();URL.revokeObjectURL(a.href);
+  });
+
+  /* AdSense:載入碼已放在 <head>;這裡依 window.ADS 的版位代碼把兩個版位變成廣告,
+     未填版位代碼則維持佔位框(不影響功能) */
+  function initAds(){
+    var cfg=window.ADS||{};
+    var pub=(cfg.pub||'').trim();
+    if(!/^ca-pub-\d{10,}$/.test(pub))return;              // 沒填合法發布商 ID → 維持佔位
+    [['adTop',cfg.slotTop],['adBottom',cfg.slotBottom]].forEach(function(p){
+      var box=$(p[0]),slot=(p[1]||'').trim();
+      if(!box||!slot)return;                               // 版位代碼未填 → 該槽維持佔位
+      box.innerHTML='';box.style.border='none';box.style.minHeight='0';
+      var ins=document.createElement('ins');
+      ins.className='adsbygoogle';ins.style.display='block';
+      ins.setAttribute('data-ad-client',pub);
+      ins.setAttribute('data-ad-slot',slot);
+      ins.setAttribute('data-ad-format','auto');
+      ins.setAttribute('data-full-width-responsive','true');
+      box.appendChild(ins);
+      try{(window.adsbygoogle=window.adsbygoogle||[]).push({});}catch(e){}
+    });
+  }
+  initAds();
+})();
+</script>
+</body>
+</html>

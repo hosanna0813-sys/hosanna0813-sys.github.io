@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>語音轉逐字稿(計費版)</title>
+<!-- v2 phase2 build marker: 上傳音檔轉錄 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5508689053185527"
+     crossorigin="anonymous"></script>
+<style>
+  :root{
+    --bg:#F4F6FA; --card:#FFFFFF; --ink:#18213A; --muted:#65718A;
+    --accent:#3B5BDB; --accent-soft:#EDF1FE; --line:#E3E8F0;
+    --ok:#188A50; --ok-soft:#E9F7EF; --err:#C4453A; --err-soft:#FCEEEC;
+    --radius:14px; --radius-s:9px;
+    --shadow:0 1px 2px rgba(24,33,58,.05),0 10px 30px rgba(24,33,58,.07);
+  }
+  [data-mode=dark]{
+    --bg:#0E1320; --card:#171E2E; --ink:#E7EBF4; --muted:#93A0B8;
+    --accent:#7B96F4; --accent-soft:#232E4E; --line:#2A3550;
+    --ok:#5CC98A; --ok-soft:#173226; --err:#F08A80; --err-soft:#3A211E;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 14px 36px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Noto Sans TC',system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--ink);min-height:100vh;
+    padding:28px 16px 64px;line-height:1.6;transition:background .25s,color .25s;
+  }
+  .wrap{max-width:560px;margin:0 auto}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .logo{
+    width:42px;height:42px;flex:none;border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),#7B5BD6);
+    display:flex;align-items:center;justify-content:center;color:#fff;
+  }
+  .logo svg{width:22px;height:22px}
+  .brand h1{font-size:1.25rem;font-weight:700;letter-spacing:.04em;line-height:1.3}
+  .brand p{font-size:.78rem;color:var(--muted)}
+  #modeBtn{
+    width:38px;height:38px;flex:none;border-radius:50%;border:1px solid var(--line);
+    background:var(--card);cursor:pointer;font-size:1rem;line-height:1;
+  }
+  #modeBtn:hover{border-color:var(--accent)}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden;
+  }
+  .card>section{padding:22px 24px}
+  .card>section+section{border-top:1px solid var(--line)}
+  .step-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .step-head h2{font-size:1rem;font-weight:700;letter-spacing:.03em}
+  label.field{display:block;font-size:.8rem;color:var(--muted);margin-bottom:5px}
+  input[type=email],input[type=text],input[type=number]{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius-s);
+    font-family:inherit;font-size:.92rem;color:var(--ink);background:var(--card);
+  }
+  input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+  ::placeholder{color:var(--muted);opacity:.7}
+  .primary{
+    width:100%;padding:13px;border:none;border-radius:var(--radius-s);margin-top:12px;
+    background:var(--accent);color:#fff;font-size:.98rem;font-weight:700;
+    letter-spacing:.06em;cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .primary:hover{filter:brightness(1.08)}
+  .primary:disabled{opacity:.45;cursor:not-allowed;filter:none}
+  .ghost{
+    padding:9px 16px;background:var(--card);color:var(--ink);
+    border:1px solid var(--line);border-radius:var(--radius-s);
+    font-size:.86rem;cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .ghost:hover{border-color:var(--accent);color:var(--accent)}
+  .hint{font-size:.78rem;color:var(--muted);margin-top:10px;line-height:1.65}
+  .hint code{background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px;font-size:.9em}
+  .alert{margin-top:12px;font-size:.85rem;line-height:1.65;padding:11px 13px;border-radius:var(--radius-s)}
+  .alert.err{background:var(--err-soft);color:var(--err)}
+  .alert.ok{background:var(--ok-soft);color:var(--ok)}
+  .balance{display:flex;align-items:baseline;gap:10px;padding:18px 0 6px}
+  .balance .num{font-size:2.4rem;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1}
+  .balance .unit{font-size:1rem;color:var(--muted)}
+  .acct-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .acct-row .who{font-size:.86rem;color:var(--muted);word-break:break-all;min-width:0}
+  input[type=file]{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-s);
+    font-family:inherit;font-size:.86rem;color:var(--ink);background:var(--card);cursor:pointer;
+  }
+  input[type=file]::file-selector-button{
+    font-family:inherit;font-size:.82rem;margin-right:10px;padding:6px 12px;cursor:pointer;
+    border:1px solid var(--line);border-radius:var(--radius-s);background:var(--bg);color:var(--ink);
+  }
+  .opt-row{display:flex;align-items:flex-start;gap:8px;margin-top:12px;font-size:.84rem;cursor:pointer;line-height:1.5}
+  .opt-row input{margin-top:3px;accent-color:var(--accent);width:15px;height:15px;flex:none}
+  .or-sep{text-align:center;color:var(--muted);font-size:.78rem;margin:12px 0 8px;position:relative}
+  .trim2{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+  .trim2 label{display:flex;align-items:center;gap:6px;font-size:.76rem;color:var(--muted);margin:0}
+  .trim2 input{width:96px;padding:7px 9px;font-size:.85rem}
+  #progBox{margin-top:14px}
+  #progBox.hidden{display:none}
+  .bar2{height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+  .bar2 i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .4s}
+  .prog-txt{font-size:.8rem;color:var(--muted);margin-top:7px}
+  .pkgs{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .pkg{flex:1;min-width:120px;border:1px solid var(--line);border-radius:var(--radius-s);
+    background:var(--card);cursor:pointer;padding:12px;text-align:center;font-family:inherit;transition:.15s}
+  .pkg:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+  .pkg:disabled{opacity:.5;cursor:default}
+  .pkg .p-amt{font-size:1.1rem;font-weight:700;color:var(--accent)}
+  .pkg .p-min{font-size:.78rem;color:var(--muted);margin-top:2px}
+  .hist{list-style:none;margin-top:6px}
+  .hist li{border:1px solid var(--line);border-radius:var(--radius-s);padding:9px 11px;margin-bottom:6px;font-size:.82rem}
+  .hist .h-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .hist .h-nm{flex:1;min-width:0;word-break:break-all;line-height:1.4}
+  .hist .h-meta{color:var(--muted);font-size:.74rem;margin-top:3px}
+  .hist .h-st{font-size:.7rem;padding:1px 7px;border-radius:99px;white-space:nowrap;flex:none}
+  .hist .h-st.ok{background:var(--ok-soft);color:var(--ok)}
+  .hist .h-st.err{background:var(--err-soft);color:var(--err)}
+  .hist .h-st.run{background:var(--accent-soft);color:var(--accent)}
+  .hist .h-del{border:none;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.72rem;font-family:inherit;padding:0;margin-top:5px}
+  .hist .h-del:hover{color:var(--err)}
+  .result{margin-top:14px}
+  .result.hidden{display:none}
+  .result-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:.85rem;font-weight:500}
+  #resultText{
+    width:100%;min-height:160px;padding:12px;border:1px solid var(--line);border-radius:var(--radius-s);
+    font-family:inherit;font-size:.9rem;line-height:1.9;color:var(--ink);background:var(--card);resize:vertical;
+  }
+  .foot-note{font-size:.76rem;color:var(--muted);margin-top:20px;text-align:center;line-height:1.7}
+  .foot-note a{color:var(--accent);text-decoration:none}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></div>
+        <div>
+          <h1>語音轉逐字稿</h1>
+          <p>計費版 · 預付分鐘數</p>
+        </div>
+      </div>
+      <button id="modeBtn" title="切換深色/淺色" aria-label="切換深色/淺色">🌙</button>
+    </div>
+
+    <div class="card hidden" id="configCard">
+      <section>
+        <div class="step-head"><h2>尚未設定 Supabase</h2></div>
+        <p class="hint">本頁需要先填入 Supabase 專案的網址與 anon key 才能運作。
+        請開啟 <code>v2/index.html</code>,找到最上方 <code>SUPABASE_CONFIG</code> 區塊填入你的
+        專案資訊(步驟見 <code>v2/README.md</code>)。</p>
+      </section>
+    </div>
+
+    <div class="card hidden" id="libErrCard">
+      <section>
+        <div class="step-head"><h2>登入元件載入失敗</h2></div>
+        <p class="hint">設定已就緒,但登入用的元件(Supabase 程式庫)沒載入成功。
+        通常是<b>瀏覽器快取到舊版</b>或網路暫時不穩。請<b>強制重新整理</b>頁面:
+        Windows 按 <code>Ctrl+Shift+R</code>、Mac 按 <code>Cmd+Shift+R</code>;若仍不行,
+        請檢查網路或稍後再試。</p>
+      </section>
+    </div>
+
+    <div class="card hidden" id="loadingCard">
+      <section><p class="hint">載入中……</p></section>
+    </div>
+
+    <div class="card hidden" id="loginCard">
+      <section>
+        <div class="step-head"><h2>登入</h2></div>
+        <label class="field" for="email">輸入 Email,我們會寄一封登入連結給你</label>
+        <input type="email" id="email" placeholder="you@example.com" autocomplete="email" inputmode="email">
+        <button class="primary" id="sendLink">寄送登入連結</button>
+        <div id="loginMsg"></div>
+        <p class="hint">第一次登入會自動建立帳號。點信中的連結即完成登入,無需密碼。</p>
+      </section>
+    </div>
+
+    <div class="card hidden" id="accountCard">
+      <section>
+        <div class="acct-row">
+          <div class="who">已登入:<span id="userEmail"></span></div>
+          <button class="ghost" id="logoutBtn">登出</button>
+        </div>
+      </section>
+      <section>
+        <div class="step-head"><h2>剩餘額度</h2></div>
+        <div class="balance"><span class="num" id="minNum">–</span><span class="unit">分鐘</span></div>
+        <p class="hint" id="creditLine"></p>
+        <p class="hint hidden" id="freeLine"></p>
+      </section>
+      <section id="topupSection" class="hidden">
+        <div class="step-head"><h2>儲值</h2></div>
+        <div id="payMsg"></div>
+        <div id="pkgList" class="pkgs"></div>
+        <p class="hint">線上刷卡 / LINE Pay 付款,額度自動入帳(付款完成後約數秒到帳)。</p>
+      </section>
+      <section>
+        <div class="step-head"><h2>轉錄(上傳檔案或 YouTube)</h2></div>
+        <label class="field" for="audioFile">上傳音檔或影片檔(影片會自動抽取聲音,檔案上限 100 MB)</label>
+        <input type="file" id="audioFile">
+        <div class="or-sep">或</div>
+        <label class="field" for="ytUrl">貼上 YouTube 網址</label>
+        <input type="text" id="ytUrl" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+        <div class="trim2">
+          <label>起點(選填)<input type="text" id="ytStart" placeholder="0:00" autocomplete="off"></label>
+          <label>終點(選填)<input type="text" id="ytEnd" placeholder="到結尾" autocomplete="off"></label>
+        </div>
+        <label class="opt-row"><input type="checkbox" id="optCorrect" checked>
+          <span>轉錄後用 AI 校正逐字稿(修正錯字、標點;不額外收費)</span></label>
+        <button class="primary" id="transcribeBtn">開始轉錄</button>
+        <div id="transcribeMsg"></div>
+        <div id="progBox" class="hidden">
+          <div class="bar2"><i id="progFill"></i></div>
+          <div class="prog-txt" id="progTxt"></div>
+        </div>
+        <div id="resultBox" class="result hidden">
+          <div class="result-head">
+            <span>轉錄結果</span>
+            <button class="ghost" id="copyBtn">複製</button>
+          </div>
+          <textarea id="resultText" readonly></textarea>
+        </div>
+        <p class="hint">轉錄費用依音檔長度扣除(1 秒 = 1 credit;60 秒 = 1 分鐘),最長 3 小時。
+        長音檔會自動分段處理,送出後可留在頁面看進度;YouTube 需站長家用電腦開著。</p>
+      </section>
+      <section>
+        <div class="step-head" style="justify-content:space-between">
+          <h2>使用紀錄</h2>
+          <button class="ghost" id="histRefresh" style="padding:5px 12px;font-size:.78rem">重新整理</button>
+        </div>
+        <ul id="histList" class="hist"></ul>
+        <p class="hint" id="histEmpty">尚無紀錄。</p>
+      </section>
+      <section id="adminSection" class="hidden">
+        <div class="step-head"><h2>管理員:為帳號加值</h2></div>
+        <label class="field" for="addEmail">使用者 Email(對方需先登入過一次)</label>
+        <input type="email" id="addEmail" placeholder="user@example.com" autocomplete="off">
+        <label class="field" for="addMinutes" style="margin-top:10px">加值分鐘數</label>
+        <input type="number" id="addMinutes" min="1" step="1" placeholder="例如 60">
+        <label class="field" for="addReason" style="margin-top:10px">備註(選填)</label>
+        <input type="text" id="addReason" placeholder="例如:2026-07 儲值 NT$100" autocomplete="off">
+        <button class="primary" id="addBtn">加值</button>
+        <div id="addMsg"></div>
+        <p class="hint">此區塊只有管理員看得到。加值會寫入交易紀錄,可到 Supabase 對帳。</p>
+      </section>
+    </div>
+
+    <p class="foot-note">
+      想用免費、自帶 OpenAI Key 的版本?<a href="../byok/">前往進階版(自備金鑰)→</a><br>
+      <a href="../privacy/">隱私權政策</a>
+    </p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+  /* =============================================================
+     Supabase 設定 — 填入你的專案資訊(步驟見 v2/README.md)
+     · SUPABASE_URL:專案的 Project URL
+     · SUPABASE_ANON_KEY:anon / public key(可公開放前端,防護靠 RLS)
+     · service_role key 絕對不要填在這裡!那是後端專用的。
+     ============================================================= */
+  var SUPABASE_CONFIG = {
+    url: 'https://ocfyfwcdpzllkmbkldtv.supabase.co',        // 你的 Project URL(不含 /rest/v1/)
+    anonKey: 'sb_publishable_VKEH-D0XUQLJaFtPeYxy5g_qicoVNKa'   // publishable key(等同 anon,可公開)
+  };
+  /* 付費轉錄後端(Render):處理上傳音檔的轉錄與扣點 */
+  var BACKEND_URL = 'https://transcribe-yt-j7kv.onrender.com';
+  /* ============================================================= */
+
+  (function(){
+    var $=function(id){return document.getElementById(id);};
+    function show(id){$(id).classList.remove('hidden');}
+    function hide(id){$(id).classList.add('hidden');}
+    function setMsg(el,text,kind){
+      if(!text){el.innerHTML='';return;}
+      el.innerHTML='<div class="alert '+(kind||'ok')+'">'+text+'</div>';
+    }
+
+    var modeBtn=$('modeBtn');
+    function applyMode(m){
+      if(m==='dark'){document.documentElement.setAttribute('data-mode','dark');modeBtn.textContent='☀️';}
+      else{document.documentElement.removeAttribute('data-mode');modeBtn.textContent='🌙';}
+    }
+    try{applyMode(localStorage.getItem('tw_mode')||'');}catch(e){}
+    modeBtn.addEventListener('click',function(){
+      var dark=document.documentElement.getAttribute('data-mode')==='dark';
+      var next=dark?'':'dark';applyMode(next);
+      try{localStorage.setItem('tw_mode',next);}catch(e){}
+    });
+
+    if(!SUPABASE_CONFIG.url||!SUPABASE_CONFIG.anonKey){
+      show('configCard');       // 真的還沒填設定
+      return;
+    }
+    if(typeof supabase==='undefined'){
+      show('libErrCard');        // 設定有填,但 Supabase 程式庫沒載入(多半是快取舊版)
+      return;
+    }
+
+    var sb=supabase.createClient(SUPABASE_CONFIG.url,SUPABASE_CONFIG.anonKey);
+    function fmtInt(n){return (n||0).toLocaleString();}
+
+    function render(session){
+      hide('loadingCard');
+      if(session&&session.user){
+        hide('loginCard');show('accountCard');
+        $('userEmail').textContent=session.user.email||'(未知)';
+        loadBalance(session.user.id);
+        checkAdmin(session.user.id);
+        if(!render._resumed){render._resumed=true;resumeJob();}
+      }else{
+        hide('accountCard');show('loginCard');hide('adminSection');
+      }
+    }
+
+    /* 讀自己的 role(RLS 只讓讀自己那筆);是 admin 才顯示加值區塊 */
+    function checkAdmin(uid){
+      sb.from('profiles').select('role').eq('id',uid).maybeSingle()
+        .then(function(res){
+          if(res.data&&res.data.role==='admin')show('adminSection');
+          else hide('adminSection');
+        },function(){hide('adminSection');});
+    }
+
+    function setCredits(credits){
+      credits=credits||0;
+      $('minNum').textContent=Math.floor(credits/60);
+      $('creditLine').textContent='共 '+fmtInt(credits)+' 秒(credits);60 秒 = 1 分鐘。';
+    }
+    function loadBalance(uid){
+      $('minNum').textContent='…';
+      sb.from('credit_balances').select('remaining_credits').eq('user_id',uid).maybeSingle()
+        .then(function(res){ setCredits((res.data&&res.data.remaining_credits)||0); },
+              function(){ $('minNum').textContent='0'; $('creditLine').textContent='無法讀取額度,請稍後重試。'; });
+      loadFree();
+      loadHistory();
+      loadPackages();
+    }
+    /* 今日免費剩餘(需問後端,因為免費上限存在後端);後端休眠時忽略,不影響其他 */
+    function loadFree(){
+      sb.auth.getSession().then(function(r){
+        var tk=r.data.session&&r.data.session.access_token;if(!tk)return;
+        return fetch(BACKEND_URL+'/api/me',{headers:{'Authorization':'Bearer '+tk,'ngrok-skip-browser-warning':'1'}})
+          .then(function(res){return res.ok?res.json():null;});
+      }).then(function(d){
+        if(d&&d.free_daily_minutes>0){
+          $('freeLine').textContent='今日免費剩餘 '+d.free_remaining_minutes+' / '+d.free_daily_minutes+' 分鐘(轉錄優先扣免費額度,隔天重置)';
+          show('freeLine');
+        }else{hide('freeLine');}
+      }).catch(function(){});
+    }
+
+    /* ---------- 儲值(綠界 ECPay) ---------- */
+    function loadPackages(){
+      fetch(BACKEND_URL+'/api/pay/packages',{headers:{'ngrok-skip-browser-warning':'1'}})
+        .then(function(res){return res.ok?res.json():null;})
+        .then(function(d){
+          if(!d||!d.packages||!d.packages.length){hide('topupSection');return;}
+          var box=$('pkgList');box.innerHTML='';
+          d.packages.forEach(function(p){
+            var b=document.createElement('button');b.type='button';b.className='pkg';
+            b.innerHTML='<div class="p-amt">NT$'+p.amount_twd+'</div><div class="p-min">'+p.minutes+' 分鐘</div>';
+            b.addEventListener('click',function(){startPay(p.id,b);});
+            box.appendChild(b);
+          });
+          show('topupSection');
+        }).catch(function(){hide('topupSection');});
+    }
+    function startPay(pkgId,btn){
+      var all=document.querySelectorAll('.pkg');all.forEach(function(x){x.disabled=true;});
+      setMsg($('payMsg'),'前往付款頁面……','ok');
+      sb.auth.getSession().then(function(r){
+        var tk=r.data.session&&r.data.session.access_token;
+        if(!tk)throw new Error('登入已過期,請重新登入');
+        var fd=new FormData();fd.append('package_id',pkgId);
+        return fetch(BACKEND_URL+'/api/pay/create',{method:'POST',
+          headers:{'Authorization':'Bearer '+tk,'ngrok-skip-browser-warning':'1'},body:fd});
+      }).then(function(res){return res.text().then(function(t){
+        var d;try{d=JSON.parse(t);}catch(e){d={};}
+        if(!res.ok)throw new Error(d.detail||('建立付款失敗(HTTP '+res.status+')'));return d;});
+      }).then(function(d){
+        /* 動態建表單 POST 到綠界結帳頁 */
+        var f=document.createElement('form');f.method='POST';f.action=d.action;
+        Object.keys(d.params).forEach(function(k){
+          var i=document.createElement('input');i.type='hidden';i.name=k;i.value=d.params[k];f.appendChild(i);
+        });
+        document.body.appendChild(f);f.submit();
+      }).catch(function(err){
+        setMsg($('payMsg'),escapeHtml(err&&err.message||String(err)),'err');
+        all.forEach(function(x){x.disabled=false;});
+      });
+    }
+
+    /* ---------- 使用紀錄(RLS 直接讀自己那筆;刪除走 security definer RPC) ---------- */
+    function fmtDate(iso){
+      try{var d=new Date(iso);function p(n){return(n<10?'0':'')+n;}
+        return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes());
+      }catch(e){return '';}
+    }
+    function fmtLen(sec){sec=Math.round(sec||0);var m=Math.floor(sec/60),s=sec%60;return m+':'+(s<10?'0':'')+s;}
+    function loadHistory(){
+      sb.from('usage_logs')
+        .select('id,created_at,source_type,source_name,youtube_url,duration_seconds,credits_charged,free_credits,status')
+        .order('created_at',{ascending:false}).limit(20)
+        .then(function(res){renderHistory((res.data)||[]);},function(){renderHistory(null);});
+    }
+    function renderHistory(rows){
+      var ul=$('histList');ul.innerHTML='';
+      if(rows===null){$('histEmpty').textContent='無法讀取紀錄。';show('histEmpty');return;}
+      if(!rows.length){$('histEmpty').textContent='尚無紀錄。';show('histEmpty');return;}
+      hide('histEmpty');
+      rows.forEach(function(r){
+        var li=document.createElement('li');
+        var stCls=r.status==='completed'?'ok':(r.status==='failed'||r.status==='refunded'?'err':'run');
+        var stTxt=r.status==='completed'?'完成':(r.status==='failed'?'失敗':(r.status==='refunded'?'已退款':'處理中'));
+        var name=r.source_name||(r.source_type==='youtube'?'YouTube 影片':'(已刪除內容)');
+        var charged=r.credits_charged||0, free=r.free_credits||0, paid=Math.max(0,charged-free);
+        var costTxt=charged?('花費 '+Math.round(charged/60)+' 分'+(free?('(含免費 '+Math.round(free/60)+' 分)'):'')):'';
+        var top=document.createElement('div');top.className='h-top';
+        top.innerHTML='<span class="h-nm">'+escapeHtml(name)+'</span><span class="h-st '+stCls+'">'+stTxt+'</span>';
+        var meta=document.createElement('div');meta.className='h-meta';
+        meta.textContent=fmtDate(r.created_at)+' · 長度 '+fmtLen(r.duration_seconds)+(costTxt?(' · '+costTxt):'');
+        li.appendChild(top);li.appendChild(meta);
+        if(r.source_name||r.youtube_url){
+          var del=document.createElement('button');del.className='h-del';del.textContent='刪除此紀錄內容';
+          del.addEventListener('click',function(){
+            if(!confirm('刪除後此紀錄的檔名/網址將清空(帳務仍保留),無法復原。確定?'))return;
+            del.disabled=true;del.textContent='刪除中…';
+            sb.rpc('delete_usage_content',{p_usage_id:r.id}).then(function(){loadHistory();},
+              function(){del.disabled=false;del.textContent='刪除失敗,重試';});
+          });
+          li.appendChild(del);
+        }
+        ul.appendChild(li);
+      });
+    }
+    $('histRefresh').addEventListener('click',loadHistory);
+
+    /* ---------- 轉錄任務:送出 /api/jobs → 輪詢 /api/jobs/{id} ---------- */
+    var fileInput=$('audioFile'),transcribeBtn=$('transcribeBtn');
+    var busy=false,pollTimer=null;
+
+    /* 解析時間輸入:'90'、'5:30'、'1:05:30'(全形冒號亦可);空回 null */
+    function parseTime(str){
+      str=(str||'').replace(/:/g,':').trim();
+      if(!str)return null;
+      var m=str.match(/^(\d+)(?::([0-5]?\d))?(?::([0-5]?\d))?$/);
+      if(!m)return NaN;
+      var a=+m[1],b=m[2]!==undefined?+m[2]:null,c=m[3]!==undefined?+m[3]:null;
+      return c!==null?a*3600+b*60+c:(b!==null?a*60+b:a);
+    }
+    function token(){return sb.auth.getSession().then(function(r){
+      var t=r.data.session&&r.data.session.access_token;
+      if(!t)throw new Error('登入已過期,請重新登入');return t;});}
+    function setBusy(on){
+      busy=on;transcribeBtn.disabled=on;transcribeBtn.textContent=on?'處理中…':'開始轉錄';
+    }
+    function showProg(pct,txt){
+      show('progBox');$('progFill').style.width=(pct||0)+'%';$('progTxt').textContent=txt||'';
+    }
+
+    transcribeBtn.addEventListener('click',function(){
+      if(busy)return;
+      var f=fileInput.files[0];
+      var url=($('ytUrl').value||'').trim();
+      if(!f&&!url){setMsg($('transcribeMsg'),'請選擇音檔,或貼上 YouTube 網址。','err');return;}
+      var form=new FormData();
+      if(url){
+        if(!/^https?:\/\/(www\.|m\.|music\.)?(youtube\.com\/|youtu\.be\/)/i.test(url)){
+          setMsg($('transcribeMsg'),'這看起來不是 YouTube 網址。','err');return;}
+        var s=parseTime($('ytStart').value),e=parseTime($('ytEnd').value);
+        if(isNaN(s)||isNaN(e)){setMsg($('transcribeMsg'),'起訖時間格式錯誤(用 秒、分:秒 或 時:分:秒)。','err');return;}
+        if(s!=null&&e!=null&&e<=s){setMsg($('transcribeMsg'),'終點必須大於起點。','err');return;}
+        form.append('youtube_url',url);
+        if(s!=null)form.append('start',s);
+        if(e!=null)form.append('end',e);
+      }else{
+        form.append('file',f,f.name);
+      }
+      if($('optCorrect').checked)form.append('correct','true');
+      setBusy(true);hide('resultBox');
+      setMsg($('transcribeMsg'),'');
+      showProg(0,url?'從 YouTube 取得音訊中……(伺服器/家用電腦喚醒可能需 30–60 秒)':'上傳中……');
+      token().then(function(tk){
+        return fetch(BACKEND_URL+'/api/jobs',{method:'POST',
+          headers:{'Authorization':'Bearer '+tk,'ngrok-skip-browser-warning':'1'},body:form});
+      }).then(function(res){
+        return res.text().then(function(t){
+          var d;try{d=JSON.parse(t);}catch(e){d={};}
+          if(!res.ok){
+            var msg=d.detail||('伺服器錯誤(HTTP '+res.status+')');
+            if(res.status===401)msg='登入已過期,請重新登入後再試';
+            if(res.status===402)msg='剩餘額度不足,請儲值後再試';
+            if(res.status===409)msg='已有一個轉錄任務進行中,請待完成後再試';
+            throw new Error(msg);
+          }
+          return d;
+        });
+      }).then(function(d){
+        try{localStorage.setItem('tw_v2_job',d.job_id);}catch(e){}
+        showProg(3,'轉錄中……');
+        pollJob(d.job_id);
+      }).catch(function(err){
+        setMsg($('transcribeMsg'),escapeHtml(err&&err.message||String(err)),'err');
+        hide('progBox');setBusy(false);
+      });
+    });
+
+    function pollJob(jobId){
+      token().then(function(tk){
+        return fetch(BACKEND_URL+'/api/jobs/'+encodeURIComponent(jobId),
+          {headers:{'Authorization':'Bearer '+tk,'ngrok-skip-browser-warning':'1'}});
+      }).then(function(res){
+        return res.text().then(function(t){
+          var d;try{d=JSON.parse(t);}catch(e){d={};}
+          if(!res.ok)throw new Error(d.detail||('查詢進度失敗(HTTP '+res.status+')'));
+          return d;
+        });
+      }).then(function(d){
+        if(d.status==='processing'){
+          var stage=d.stage||'處理中';
+          showProg(d.progress||0,stage+(d.progress?(' '+d.progress+'%'):'……'));
+          pollTimer=setTimeout(function(){pollJob(jobId);},4000);
+        }else if(d.status==='done'){
+          try{localStorage.removeItem('tw_v2_job');}catch(e){}
+          hide('progBox');setBusy(false);
+          setMsg($('transcribeMsg'),'轉錄完成 ✓','ok');
+          $('resultText').value=d.text||'';show('resultBox');
+          if(typeof d.remaining_credits==='number')setCredits(d.remaining_credits);
+          loadFree();loadHistory();   // 免費額度/紀錄刷新
+        }else{ // failed
+          try{localStorage.removeItem('tw_v2_job');}catch(e){}
+          hide('progBox');setBusy(false);
+          setMsg($('transcribeMsg'),escapeHtml(d.error||'轉錄失敗'),'err');
+        }
+      }).catch(function(err){
+        // 查詢暫時失敗:再試一次,不中斷任務
+        pollTimer=setTimeout(function(){pollJob(jobId);},5000);
+      });
+    }
+
+    /* 頁面載入時若有進行中的任務(localStorage),自動接回輪詢 */
+    function resumeJob(){
+      var jid=null;try{jid=localStorage.getItem('tw_v2_job');}catch(e){}
+      if(jid){setBusy(true);showProg(0,'接回進行中的任務……');pollJob(jid);}
+    }
+    $('copyBtn').addEventListener('click',function(){
+      var t=$('resultText').value;
+      if(navigator.clipboard){navigator.clipboard.writeText(t);}
+      else{$('resultText').select();document.execCommand('copy');}
+      this.textContent='已複製';var b=this;setTimeout(function(){b.textContent='複製';},1500);
+    });
+    function escapeHtml(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+    /* ---------- 管理員加值(呼叫後端 /api/admin/add-credits) ---------- */
+    var addingBusy=false,addIdem=null;
+    $('addBtn').addEventListener('click',function(){
+      if(addingBusy)return;
+      var email=($('addEmail').value||'').trim();
+      var minutes=parseInt($('addMinutes').value,10);
+      var reason=($('addReason').value||'').trim();
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){setMsg($('addMsg'),'請輸入有效的 Email。','err');return;}
+      if(!(minutes>0)){setMsg($('addMsg'),'請輸入正整數分鐘數。','err');return;}
+      /* 每次按下產生一組冪等鍵,網路重試不會重複加值;成功後清掉,下次再產生新的 */
+      if(!addIdem)addIdem=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('k-'+Date.now()+'-'+Math.random());
+      addingBusy=true;this.disabled=true;this.textContent='加值中…';setMsg($('addMsg'),'');
+      sb.auth.getSession().then(function(r){
+        var token=r.data.session&&r.data.session.access_token;
+        if(!token)throw new Error('登入已過期,請重新登入');
+        return fetch(BACKEND_URL+'/api/admin/add-credits',{
+          method:'POST',
+          headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+          body:JSON.stringify({email:email,minutes:minutes,reason:reason,idempotency_key:addIdem})
+        });
+      }).then(function(res){
+        return res.text().then(function(t){
+          var d;try{d=JSON.parse(t);}catch(e){d={};}
+          if(!res.ok)throw new Error(d.detail||('加值失敗(HTTP '+res.status+')'));
+          return d;
+        });
+      }).then(function(d){
+        var mins=d.remaining_minutes,who=d.target_email||email;
+        setMsg($('addMsg'),(d.duplicate?'(已加值過,未重複)':'加值成功 ✓')+' — '+escapeHtml(who)+' 目前剩餘 '+mins+' 分鐘','ok');
+        addIdem=null;                       // 這筆完成,下次用新的冪等鍵
+        $('addMinutes').value='';
+        /* 若加值對象是自己,順手更新上方餘額 */
+        sb.auth.getUser().then(function(u){
+          if(u.data.user&&u.data.user.email&&who&&u.data.user.email.toLowerCase()===who.toLowerCase()&&typeof d.remaining_credits==='number')setCredits(d.remaining_credits);
+        });
+      }).catch(function(err){
+        setMsg($('addMsg'),escapeHtml(err&&err.message||String(err)),'err');
+      }).finally(function(){
+        addingBusy=false;$('addBtn').disabled=false;$('addBtn').textContent='加值';
+      });
+    });
+
+    var sending=false;
+    $('sendLink').addEventListener('click',function(){
+      if(sending)return;
+      var email=($('email').value||'').trim();
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
+        setMsg($('loginMsg'),'請輸入有效的 Email。','err');return;
+      }
+      sending=true;this.disabled=true;this.textContent='寄送中…';
+      setMsg($('loginMsg'),'');
+      sb.auth.signInWithOtp({email:email,options:{emailRedirectTo:window.location.href}})
+        .then(function(res){
+          if(res.error){setMsg($('loginMsg'),'寄送失敗:'+res.error.message,'err');}
+          else{setMsg($('loginMsg'),'已寄出登入連結,請到信箱點擊連結完成登入。','ok');}
+        })
+        .catch(function(e){setMsg($('loginMsg'),'寄送失敗:'+(e&&e.message||e),'err');})
+        .finally(function(){sending=false;$('sendLink').disabled=false;$('sendLink').textContent='寄送登入連結';});
+    });
+    $('email').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();$('sendLink').click();}});
+
+    $('logoutBtn').addEventListener('click',function(){sb.auth.signOut();});
+
+    /* 綠界付款導回:入帳由後端 callback 處理,Render 免費方案休眠時可能延遲 30~90 秒,
+       故輪詢到約 2 分鐘、偵測餘額增加就停,避免使用者誤以為失敗 */
+    if(/[?&]paid=1/.test(window.location.search)){
+      try{history.replaceState(null,'',window.location.pathname);}catch(e){}
+      var payBase=null,payTries=0,payMax=30;   // 每 4 秒一次 × 30 ≈ 2 分鐘
+      function payMsg(){ if($('payMsg'))setMsg($('payMsg'),
+        '付款處理中,伺服器喚醒中,最多需 1~2 分鐘,請稍候…','ok'); }
+      setTimeout(payMsg,300);
+      var payIv=setInterval(function(){
+        payTries++;
+        sb.auth.getUser().then(function(u){
+          var uid=u.data.user&&u.data.user.id; if(!uid)return;
+          return sb.from('credit_balances').select('remaining_credits').eq('user_id',uid).maybeSingle()
+            .then(function(res){
+              var c=(res.data&&res.data.remaining_credits)||0;
+              if(payBase===null){payBase=c;setCredits(c);return;}  // 第一次記基準
+              if(c>payBase){                                       // 入帳成功
+                setCredits(c);clearInterval(payIv);
+                if($('payMsg'))setMsg($('payMsg'),'已入帳 ✓ 額度已更新','ok');
+              }
+            });
+        });
+        if(payTries>=payMax){
+          clearInterval(payIv);
+          if($('payMsg'))setMsg($('payMsg'),
+            '若餘額仍未更新,請稍後重新整理;款項已收到會自動入帳,不會遺失。','ok');
+        }
+      },4000);
+    }
+
+    show('loadingCard');
+    sb.auth.getSession().then(function(res){render(res.data.session);});
+    sb.auth.onAuthStateChange(function(_event,session){render(session);});
+  })();
+  </script>
+</body>
+</html>
